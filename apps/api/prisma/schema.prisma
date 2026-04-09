@@ -11,15 +11,17 @@ generator client {
 // ─── Auth Tables (better-auth compatible structure) ───────────────────────────
 
 model User {
-  id            String    @id
+  id            String       @id
   name          String
-  email         String    @unique
+  email         String       @unique
   emailVerified Boolean
   image         String?
+  role          PlatformRole @default(USER)
   createdAt     DateTime
   updatedAt     DateTime
   sessions      Session[]
   accounts      Account[]
+  members       Member[]
 
   @@map("user")
   @@schema("cooworking2")
@@ -74,6 +76,31 @@ model Verification {
 
 // ─── Domain Enums ────────────────────────────────────────────────────────────
 
+enum PlatformRole {
+  PLATFORM_ADMIN
+  USER
+
+  @@schema("cooworking2")
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  STAFF
+  MEMBER
+
+  @@schema("cooworking2")
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+
+  @@schema("cooworking2")
+}
+
 enum OrganizationStatus {
   ACTIVE
   SUSPENDED
@@ -101,6 +128,7 @@ model Organization {
   updatedAt DateTime           @updatedAt
 
   locations Location[]
+  members   Member[]
 
   @@map("organization")
   @@schema("cooworking2")
@@ -123,8 +151,30 @@ model Location {
   updatedAt      DateTime       @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members      Member[]
 
   @@unique([organizationId, slug])
   @@map("location")
+  @@schema("cooworking2")
+}
+
+// ─── Members (better-auth inspired) ─────────────────────────────────────────
+
+model Member {
+  id             String       @id @default(uuid())
+  userId         String
+  organizationId String
+  locationId     String
+  role           MemberRole   @default(MEMBER)
+  status         MemberStatus @default(PENDING)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location     Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, locationId])
+  @@map("member")
   @@schema("cooworking2")
 }

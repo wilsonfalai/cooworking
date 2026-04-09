@@ -4,12 +4,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { MembersService } from '../members/members.service.js';
 import { CreateLocationDto } from './dto/create-location.dto.js';
 import { UpdateLocationDto } from './dto/update-location.dto.js';
 
 @Injectable()
 export class LocationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly membersService: MembersService,
+  ) {}
 
   private slugify(text: string): string {
     return text
@@ -37,9 +41,13 @@ export class LocationsService {
       );
     }
 
-    return this.prisma.location.create({
+    const location = await this.prisma.location.create({
       data: { ...dto, slug, organizationId },
     });
+
+    await this.membersService.autoCreateOwners(organizationId, location.id);
+
+    return location;
   }
 
   async findAllByOrg(organizationId: string) {

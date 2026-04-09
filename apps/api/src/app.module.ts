@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module.js';
 import { StorageModule } from './storage/storage.module.js';
 import { OrganizationsModule } from './organizations/organizations.module.js';
 import { LocationsModule } from './locations/locations.module.js';
+import { MembersModule } from './members/members.module.js';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { LocationsModule } from './locations/locations.module.js';
     UsersModule,
     OrganizationsModule,
     LocationsModule,
+    MembersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
