@@ -11,7 +11,7 @@ Monorepo Turborepo para uma plataforma SaaS de coworking.
 - **Auth**: NestJS nativo (Passport + JWT) — sem plugins externos como better-auth
 - **DB**: PostgreSQL na nuvem (EasyPanel), database `mosaic`, schema `cooworking2`
 - **Storage**: MinIO (S3-compatible) para arquivos estáticos
-- **Spec Kit**: Spec-Driven Development — `.specify/` e `.claude/skills/`
+- **Spec Kit**: Spec-Driven Development — `.specify/`
 
 ## Comandos
 
@@ -37,21 +37,41 @@ apps/
     prisma/       # Schema e migrations
     prisma.config.ts  # Config de conexão (Prisma 7)
     src/
-      generated/  # Prisma client gerado (gitignored)
-      auth/       # Autenticação (JWT + Passport)
-      users/      # Módulo de usuários
-      storage/    # MinIO storage service
-      prisma/     # PrismaService (global)
+      generated/      # Prisma client gerado (gitignored)
+      auth/           # Autenticação (JWT + Passport)
+      users/          # Módulo de usuários
+      organizations/  # CRUD de organizações (tenant SaaS)
+      locations/      # CRUD de locations (filiais, nested sob org)
+      members/        # Membros (vínculo user↔location com role)
+      storage/        # MinIO storage service
+      prisma/         # PrismaService (global)
+      common/         # Guards, decorators compartilhados
 packages/
   tsconfig/       # Configurações TypeScript compartilhadas
-.specify/         # Spec Kit (SDD)
+.specify/         # Spec Kit (SDD) — constituição v2.0.0
 ```
+
+## Domain Model
+
+```
+User (auth) → role: PLATFORM_ADMIN | USER
+Organization (tenant) → status: TRIAL | ACTIVE | SUSPENDED
+  └── Location (filial) → status: ACTIVE | INACTIVE
+        └── Member (vínculo) → role: OWNER | ADMIN | STAFF | MEMBER
+                                status: ACTIVE | INACTIVE | SUSPENDED | PENDING
+```
+
+- Member: 1 registro por user por location (@@unique([userId, locationId]))
+- OWNER/ADMIN auto-criados em novas locations
+- Slug: Organization (global unique), Location (unique dentro da org)
 
 ## Convenções
 
 - Linguagem do código: inglês
 - Commits: Conventional Commits
 - Backend API prefix: `/api`
+- Rotas nested: `/api/organizations/:orgId/locations`, `/api/organizations/:orgId/members`
 - Frontend consome API via `NEXT_PUBLIC_API_URL`
 - Backend é ESM — todos os imports locais usam extensão `.js`
 - Prisma 7 — client gerado em `src/generated/prisma`, conexão via adapter em `PrismaService`
+- Migrations via `prisma migrate dev` (não usar prisma push em produção)
