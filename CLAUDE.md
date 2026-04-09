@@ -5,7 +5,8 @@ Monorepo Turborepo para uma plataforma SaaS de coworking.
 ## Stack
 
 - **Monorepo**: Turborepo + pnpm workspaces
-- **Frontend**: Next.js (App Router) + Tailwind CSS v4 + Shadcn UI — `apps/web` (porta 3000)
+- **Frontend (Web)**: Next.js (App Router) + Tailwind CSS v4 + Shadcn UI — `apps/web` (porta 3000)
+- **Frontend (Admin)**: Next.js (App Router) + Tailwind CSS v4 + Shadcn UI — `apps/admin` (porta 3002)
 - **Backend**: NestJS (ESM, `"type": "module"`) + Prisma 7 + PostgreSQL — `apps/api` (porta 3001)
 - **Auth**: NestJS nativo (Passport + JWT) — sem plugins externos como better-auth
 - **DB**: PostgreSQL na nuvem (EasyPanel), database `mosaic`, schema `cooworking2`
@@ -30,7 +31,8 @@ pnpm prisma:studio     # UI para explorar dados
 
 ```
 apps/
-  web/            # Next.js frontend
+  admin/          # Next.js SaaS admin panel (porta 3002)
+  web/            # Next.js coworking frontend (porta 3000)
   api/            # NestJS backend (ESM)
     prisma/       # Schema e migrations
     prisma.config.ts  # Config de conexão (Prisma 7)
