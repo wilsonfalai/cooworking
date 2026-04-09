@@ -9,10 +9,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { OrganizationsService } from './organizations.service.js';
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
 import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
 
+@ApiTags('Organizations')
+@ApiBearerAuth()
 @Controller('organizations')
 @UseGuards(AuthGuard('jwt'))
 export class OrganizationsController {
