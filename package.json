@@ -20,5 +20,8 @@
       "@prisma/engines",
       "prisma"
     ]
+  },
+  "devDependencies": {
+    "turbo": "^2.9.5"
   }
 }
