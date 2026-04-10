@@ -11,7 +11,10 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
   app.enableCors({
-    origin: configService.get('FRONTEND_URL', 'http://localhost:3000'),
+    origin: configService
+      .get('CORS_ORIGINS', 'http://localhost:3000,http://localhost:3002')
+      .split(',')
+      .map((o: string) => o.trim()),
     credentials: true,
   });
   app.useGlobalPipes(

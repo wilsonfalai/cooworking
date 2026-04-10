@@ -56,12 +56,6 @@ export const api = {
         body: JSON.stringify({ email, password }),
       });
     },
-    register(name: string, email: string, password: string) {
-      return request<AuthResponse>("/auth/register", {
-        method: "POST",
-        body: JSON.stringify({ name, email, password }),
-      });
-    },
     me(token: string) {
       return request<User>("/auth/me", {
         headers: authHeaders(token),

@@ -96,7 +96,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={logout}>
+            <DropdownMenuItem onClick={logout}>
               <LogOutIcon />
               Sair
             </DropdownMenuItem>
