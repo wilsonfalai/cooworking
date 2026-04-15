@@ -42,19 +42,25 @@ const data = {
       title: "Organizações",
       url: "/organizations",
       icon: <BuildingIcon />,
-      items: [],
+      items: [
+        { title: "Listar", url: "/organizations" },
+      ],
     },
     {
       title: "Locais",
       url: "/locations",
       icon: <MapPinIcon />,
-      items: [],
+      items: [
+        { title: "Listar", url: "/locations" },
+      ],
     },
     {
       title: "Usuários",
       url: "/users",
       icon: <UsersIcon />,
-      items: [],
+      items: [
+        { title: "Listar", url: "/users" },
+      ],
     },
     {
       title: "Configurações",
