@@ -62,6 +62,19 @@ export interface Member {
   location?: Location;
 }
 
+export interface UserMembership {
+  id: string;
+  role: MemberRole;
+  status: MemberStatus;
+  createdAt: string;
+  organization: Pick<Organization, "id" | "name" | "slug">;
+  location: Pick<Location, "id" | "name" | "city" | "state">;
+}
+
+export interface UserDetail extends User {
+  members: UserMembership[];
+}
+
 // ─── Input types ──────────────────────────────────────────────────────────────
 
 export interface CreateOrganizationInput {
@@ -258,6 +271,19 @@ export const api = {
     remove(token: string, orgId: string, id: string) {
       return request<void>(`/organizations/${orgId}/members/${id}`, {
         method: "DELETE",
+        headers: authHeaders(token),
+      });
+    },
+  },
+
+  users: {
+    list(token: string) {
+      return request<User[]>("/users", {
+        headers: authHeaders(token),
+      });
+    },
+    get(token: string, id: string) {
+      return request<UserDetail>(`/users/${id}`, {
         headers: authHeaders(token),
       });
     },
