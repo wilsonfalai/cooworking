@@ -262,14 +262,14 @@ export default function OrganizationDetailPage({
       {/* ── Main grid ── */}
       <div className="grid gap-6 lg:grid-cols-3">
 
-        {/* ── Left: Locations ── */}
-        <div className="lg:col-span-2 flex flex-col gap-4">
+        {/* ── Left: Locations + Members ── */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+
+          {/* Unidades */}
           <div className="rounded-xl border bg-card shadow-sm">
-            <div className="flex items-center justify-between px-5 py-4">
-              <div>
-                <h2 className="font-semibold">Unidades</h2>
-                <p className="text-sm text-muted-foreground">Locais vinculados a esta organização</p>
-              </div>
+            <div className="px-5 py-4">
+              <h2 className="font-semibold">Unidades</h2>
+              <p className="text-sm text-muted-foreground">Locais vinculados a esta organização</p>
             </div>
             <Separator />
             <div className="p-5">
@@ -288,15 +288,13 @@ export default function OrganizationDetailPage({
               )}
             </div>
           </div>
-        </div>
 
-        {/* ── Right: Members ── */}
-        <div className="flex flex-col gap-4">
+          {/* Membros */}
           <div className="rounded-xl border bg-card shadow-sm">
             <div className="px-5 py-4">
               <h2 className="font-semibold">Membros</h2>
               <p className="text-sm text-muted-foreground">
-                {members.length} vínculo{members.length !== 1 ? "s" : ""} na organização
+                {isLoading ? "Carregando..." : `${members.length} vínculo${members.length !== 1 ? "s" : ""} na organização`}
               </p>
             </div>
             <Separator />
@@ -355,6 +353,26 @@ export default function OrganizationDetailPage({
             )}
           </div>
         </div>
+
+        {/* ── Right: Notes ── */}
+        <div className="flex flex-col gap-4">
+          <div className="rounded-xl border bg-card shadow-sm">
+            <div className="px-5 py-4">
+              <h2 className="font-semibold">Notas e observações</h2>
+              <p className="text-sm text-muted-foreground">Anotações internas sobre esta organização</p>
+            </div>
+            <Separator />
+            <div className="flex flex-col gap-3 p-5">
+              <div className="rounded-lg border border-dashed bg-muted/40 p-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Em breve</p>
+                <p className="text-sm text-muted-foreground">
+                  Esta área será usada para registrar notas internas, observações de suporte e histórico de contato com a organização.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   )
