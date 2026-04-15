@@ -65,35 +65,42 @@ const memberRoleLabel: Record<MemberRole, string> = {
 
 // ─── Location columns ─────────────────────────────────────────────────────────
 
-const locationColumns: ColumnDef<Location>[] = [
-  {
-    accessorKey: "name",
-    header: "Nome",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-        <span className="font-medium">{row.original.name}</span>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "city",
-    header: "Cidade",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">
-        {row.original.city ?? "—"}{row.original.state ? `, ${row.original.state}` : ""}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const cfg = locationStatusConfig[row.original.status]
-      return <Badge variant={cfg.variant}>{cfg.label}</Badge>
+function buildLocationColumns(orgId: string): ColumnDef<Location>[] {
+  return [
+    {
+      accessorKey: "name",
+      header: "Nome",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+          <Link
+            href={`/organizations/${orgId}/locations/${row.original.id}`}
+            className="font-medium hover:underline"
+          >
+            {row.original.name}
+          </Link>
+        </div>
+      ),
     },
-  },
-]
+    {
+      accessorKey: "city",
+      header: "Cidade",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">
+          {row.original.city ?? "—"}{row.original.state ? `, ${row.original.state}` : ""}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const cfg = locationStatusConfig[row.original.status]
+        return <Badge variant={cfg.variant}>{cfg.label}</Badge>
+      },
+    },
+  ]
+}
 
 // ─── Grouped member columns ───────────────────────────────────────────────────
 
@@ -301,6 +308,7 @@ export default function OrganizationDetailPage({
   }, [members])
 
   const memberColumns = useMemo(() => buildMemberColumns(id), [id])
+  const locationColumns = useMemo(() => buildLocationColumns(id), [id])
 
   const locations = org?.locations ?? []
   const activeMembers = members.filter((m) => m.status === "ACTIVE").length
