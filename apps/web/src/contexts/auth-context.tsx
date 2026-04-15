@@ -41,8 +41,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (email: string, password: string) => {
       const { accessToken } = await api.auth.login(email, password);
-      setToken(accessToken);
       const me = await api.auth.me(accessToken);
+
+      if (me.role === "PLATFORM_ADMIN") {
+        throw new Error("Acesso restrito. Administradores da plataforma devem usar o painel administrativo.");
+      }
+
+      setToken(accessToken);
       setUser(me);
       router.push("/dashboard");
     },
