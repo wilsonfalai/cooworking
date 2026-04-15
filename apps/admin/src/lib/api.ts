@@ -1,19 +1,119 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+export type PlatformRole = "PLATFORM_ADMIN" | "USER";
+export type MemberRole = "OWNER" | "ADMIN" | "STAFF" | "MEMBER";
+export type MemberStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED" | "PENDING";
+export type OrganizationStatus = "ACTIVE" | "SUSPENDED" | "TRIAL";
+export type LocationStatus = "ACTIVE" | "INACTIVE";
+
+// ─── Entities ─────────────────────────────────────────────────────────────────
+
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: "PLATFORM_ADMIN" | "USER";
+  role: PlatformRole;
   emailVerified: boolean;
   image: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-interface AuthResponse {
-  accessToken: string;
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  logo: string | null;
+  status: OrganizationStatus;
+  createdAt: string;
+  updatedAt: string;
+  locations?: Location[];
 }
+
+export interface Location {
+  id: string;
+  organizationId: string;
+  name: string;
+  slug: string;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  zipCode: string | null;
+  phone: string | null;
+  timezone: string;
+  status: LocationStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Member {
+  id: string;
+  userId: string;
+  organizationId: string;
+  locationId: string;
+  role: MemberRole;
+  status: MemberStatus;
+  createdAt: string;
+  updatedAt: string;
+  user: Pick<User, "id" | "name" | "email">;
+  location?: Location;
+}
+
+// ─── Input types ──────────────────────────────────────────────────────────────
+
+export interface CreateOrganizationInput {
+  name: string;
+  slug?: string;
+  logo?: string;
+}
+
+export interface UpdateOrganizationInput {
+  name?: string;
+  slug?: string;
+  logo?: string;
+  status?: OrganizationStatus;
+}
+
+export interface CreateLocationInput {
+  name: string;
+  slug?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  zipCode?: string;
+  phone?: string;
+  timezone?: string;
+}
+
+export interface UpdateLocationInput {
+  name?: string;
+  slug?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  zipCode?: string;
+  phone?: string;
+  timezone?: string;
+  status?: LocationStatus;
+}
+
+export interface CreateMemberInput {
+  userId: string;
+  locationId: string;
+  role?: MemberRole;
+}
+
+export interface UpdateMemberInput {
+  role?: MemberRole;
+  status?: MemberStatus;
+}
+
+// ─── Infrastructure ───────────────────────────────────────────────────────────
 
 class ApiError extends Error {
   constructor(
@@ -21,13 +121,11 @@ class ApiError extends Error {
     message: string,
   ) {
     super(message);
+    this.name = "ApiError";
   }
 }
 
-async function request<T>(
-  path: string,
-  options?: RequestInit,
-): Promise<T> {
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
@@ -48,16 +146,118 @@ function authHeaders(token: string) {
   return { Authorization: `Bearer ${token}` };
 }
 
+// ─── API client ───────────────────────────────────────────────────────────────
+
 export const api = {
   auth: {
     login(email: string, password: string) {
-      return request<AuthResponse>("/auth/login", {
+      return request<{ accessToken: string }>("/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
     },
     me(token: string) {
       return request<User>("/auth/me", {
+        headers: authHeaders(token),
+      });
+    },
+  },
+
+  organizations: {
+    list(token: string) {
+      return request<Organization[]>("/organizations", {
+        headers: authHeaders(token),
+      });
+    },
+    get(token: string, id: string) {
+      return request<Organization>(`/organizations/${id}`, {
+        headers: authHeaders(token),
+      });
+    },
+    create(token: string, data: CreateOrganizationInput) {
+      return request<Organization>("/organizations", {
+        method: "POST",
+        headers: authHeaders(token),
+        body: JSON.stringify(data),
+      });
+    },
+    update(token: string, id: string, data: UpdateOrganizationInput) {
+      return request<Organization>(`/organizations/${id}`, {
+        method: "PUT",
+        headers: authHeaders(token),
+        body: JSON.stringify(data),
+      });
+    },
+    remove(token: string, id: string) {
+      return request<Organization>(`/organizations/${id}`, {
+        method: "DELETE",
+        headers: authHeaders(token),
+      });
+    },
+  },
+
+  locations: {
+    list(token: string, orgId: string) {
+      return request<Location[]>(`/organizations/${orgId}/locations`, {
+        headers: authHeaders(token),
+      });
+    },
+    get(token: string, orgId: string, id: string) {
+      return request<Location>(`/organizations/${orgId}/locations/${id}`, {
+        headers: authHeaders(token),
+      });
+    },
+    create(token: string, orgId: string, data: CreateLocationInput) {
+      return request<Location>(`/organizations/${orgId}/locations`, {
+        method: "POST",
+        headers: authHeaders(token),
+        body: JSON.stringify(data),
+      });
+    },
+    update(token: string, orgId: string, id: string, data: UpdateLocationInput) {
+      return request<Location>(`/organizations/${orgId}/locations/${id}`, {
+        method: "PUT",
+        headers: authHeaders(token),
+        body: JSON.stringify(data),
+      });
+    },
+    remove(token: string, orgId: string, id: string) {
+      return request<Location>(`/organizations/${orgId}/locations/${id}`, {
+        method: "DELETE",
+        headers: authHeaders(token),
+      });
+    },
+  },
+
+  members: {
+    list(token: string, orgId: string, locationId?: string) {
+      const qs = locationId ? `?locationId=${locationId}` : "";
+      return request<Member[]>(`/organizations/${orgId}/members${qs}`, {
+        headers: authHeaders(token),
+      });
+    },
+    get(token: string, orgId: string, id: string) {
+      return request<Member>(`/organizations/${orgId}/members/${id}`, {
+        headers: authHeaders(token),
+      });
+    },
+    create(token: string, orgId: string, data: CreateMemberInput) {
+      return request<Member>(`/organizations/${orgId}/members`, {
+        method: "POST",
+        headers: authHeaders(token),
+        body: JSON.stringify(data),
+      });
+    },
+    update(token: string, orgId: string, id: string, data: UpdateMemberInput) {
+      return request<Member>(`/organizations/${orgId}/members/${id}`, {
+        method: "PUT",
+        headers: authHeaders(token),
+        body: JSON.stringify(data),
+      });
+    },
+    remove(token: string, orgId: string, id: string) {
+      return request<void>(`/organizations/${orgId}/members/${id}`, {
+        method: "DELETE",
         headers: authHeaders(token),
       });
     },
