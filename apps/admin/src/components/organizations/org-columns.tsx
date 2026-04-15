@@ -2,9 +2,16 @@
 
 import { type ColumnDef } from "@tanstack/react-table"
 import Link from "next/link"
-import { Building2 } from "lucide-react"
+import { Building2, MoreHorizontal, Eye, Pencil } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 import { type Organization, type OrganizationStatus } from "@/lib/api"
 
 const statusConfig: Record<OrganizationStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -61,12 +68,26 @@ export const orgColumns: ColumnDef<Organization>[] = [
   {
     id: "actions",
     header: "",
-    cell: ({ row }) => (
-      <Link href={`/organizations/${row.original.id}`}>
-        <Button variant="outline" size="sm">
-          Ver detalhes
-        </Button>
-      </Link>
-    ),
+    cell: ({ row }) => {
+      const id = row.original.id
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="ghost" size="sm" />}>
+            <MoreHorizontal className="h-4 w-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem render={<Link href={`/organizations/${id}`} />}>
+              <Eye className="mr-2 h-4 w-4" />
+              Ver detalhes
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem render={<Link href={`/organizations/${id}/edit`} />}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Editar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    },
   },
 ]
