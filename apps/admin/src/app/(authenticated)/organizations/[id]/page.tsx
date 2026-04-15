@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { use } from "react"
 import Link from "next/link"
 import {
@@ -13,25 +13,42 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  MoreHorizontal,
+  ExternalLink,
 } from "lucide-react"
 import { type ColumnDef } from "@tanstack/react-table"
 
 import { useAuth } from "@/contexts/auth-context"
 import { getToken } from "@/lib/auth"
-import { api, type Organization, type Location, type Member } from "@/lib/api"
+import { api, type Organization, type Location, type Member, type MemberRole } from "@/lib/api"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Separator } from "@/components/ui/separator"
 import { DataTable } from "@/components/ui/data-table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type GroupedMember = {
+  userId: string
+  user: Pick<Member["user"], "id" | "name" | "email">
+  roles: MemberRole[]
+  locations: Location[]
+}
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
 const orgStatusConfig = {
-  ACTIVE:    { label: "Ativo",    variant: "default" as const,      icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
-  TRIAL:     { label: "Trial",    variant: "secondary" as const,    icon: <AlertCircle className="h-3.5 w-3.5" /> },
-  SUSPENDED: { label: "Suspenso", variant: "destructive" as const,  icon: <XCircle className="h-3.5 w-3.5" /> },
+  ACTIVE:    { label: "Ativo",    variant: "default" as const,     icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
+  TRIAL:     { label: "Trial",    variant: "secondary" as const,   icon: <AlertCircle className="h-3.5 w-3.5" /> },
+  SUSPENDED: { label: "Suspenso", variant: "destructive" as const, icon: <XCircle className="h-3.5 w-3.5" /> },
 }
 
 const locationStatusConfig = {
@@ -39,7 +56,7 @@ const locationStatusConfig = {
   INACTIVE: { label: "Inativo", variant: "secondary" as const },
 }
 
-const memberRoleConfig: Record<string, string> = {
+const memberRoleLabel: Record<MemberRole, string> = {
   OWNER:  "Proprietário",
   ADMIN:  "Administrador",
   STAFF:  "Colaborador",
@@ -78,6 +95,79 @@ const locationColumns: ColumnDef<Location>[] = [
   },
 ]
 
+// ─── Grouped member columns ───────────────────────────────────────────────────
+
+function buildMemberColumns(orgId: string): ColumnDef<GroupedMember>[] {
+  return [
+    {
+      accessorKey: "user",
+      header: "Usuário",
+      cell: ({ row }) => {
+        const { name, email } = row.original.user
+        const initials = name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
+        return (
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">{name}</p>
+              <p className="truncate text-xs text-muted-foreground">{email}</p>
+            </div>
+          </div>
+        )
+      },
+    },
+    {
+      id: "roles",
+      header: "Funções",
+      cell: ({ row }) => (
+        <div className="flex flex-wrap gap-1">
+          {[...new Set(row.original.roles)].map((role) => (
+            <Badge key={role} variant="outline" className="text-xs">
+              {memberRoleLabel[role]}
+            </Badge>
+          ))}
+        </div>
+      ),
+    },
+    {
+      id: "locations",
+      header: "Unidades vinculadas",
+      cell: ({ row }) => (
+        <div className="flex flex-wrap gap-1">
+          {row.original.locations.map((loc) => (
+            <span
+              key={loc.id}
+              className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+            >
+              <MapPin className="h-2.5 w-2.5" />
+              {loc.name}
+            </span>
+          ))}
+        </div>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="ghost" size="sm" />}>
+            <MoreHorizontal className="h-4 w-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem render={<Link href={`/users/${row.original.userId}`} />}>
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Visualizar usuário
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ]
+}
+
 // ─── Stat card ────────────────────────────────────────────────────────────────
 
 function StatCard({
@@ -109,6 +199,47 @@ function StatCard({
   )
 }
 
+// ─── Member section ───────────────────────────────────────────────────────────
+
+function MemberSection({
+  title,
+  description,
+  data,
+  columns,
+  isLoading,
+  emptyMessage,
+}: {
+  title: string
+  description: string
+  data: GroupedMember[]
+  columns: ColumnDef<GroupedMember>[]
+  isLoading: boolean
+  emptyMessage: string
+}) {
+  return (
+    <div className="rounded-xl border bg-card shadow-sm">
+      <div className="px-5 py-4">
+        <h2 className="font-semibold">{title}</h2>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+      <Separator />
+      <div className="p-5">
+        {isLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : data.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">{emptyMessage}</p>
+        ) : (
+          <DataTable columns={columns} data={data} searchColumn="user" searchPlaceholder="Buscar por nome..." />
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function OrganizationDetailPage({
@@ -126,7 +257,6 @@ export default function OrganizationDetailPage({
 
   useEffect(() => {
     if (authLoading || !user) return
-
     const token = getToken()
     if (!token) return
 
@@ -142,20 +272,47 @@ export default function OrganizationDetailPage({
       .finally(() => setIsLoading(false))
   }, [authLoading, user, id])
 
-  // ── Error ──
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
-        </div>
-      </div>
-    )
-  }
+  // ── Grouped members ──
+  const { collaborators, clients } = useMemo(() => {
+    const map = new Map<string, GroupedMember>()
+
+    for (const member of members) {
+      const existing = map.get(member.userId)
+      if (existing) {
+        existing.roles.push(member.role)
+        if (member.location) existing.locations.push(member.location)
+      } else {
+        map.set(member.userId, {
+          userId: member.userId,
+          user: member.user,
+          roles: [member.role],
+          locations: member.location ? [member.location] : [],
+        })
+      }
+    }
+
+    const grouped = Array.from(map.values())
+    const collaboratorRoles: MemberRole[] = ["OWNER", "ADMIN", "STAFF"]
+
+    return {
+      collaborators: grouped.filter((g) => g.roles.some((r) => collaboratorRoles.includes(r))),
+      clients: grouped.filter((g) => g.roles.every((r) => r === "MEMBER")),
+    }
+  }, [members])
+
+  const memberColumns = useMemo(() => buildMemberColumns(id), [id])
 
   const locations = org?.locations ?? []
   const activeMembers = members.filter((m) => m.status === "ACTIVE").length
   const pendingMembers = members.filter((m) => m.status === "PENDING").length
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -194,10 +351,7 @@ export default function OrganizationDetailPage({
                 <div className="flex items-center gap-2.5">
                   <h1 className="text-2xl font-semibold tracking-tight">{org?.name}</h1>
                   {org && (
-                    <Badge
-                      variant={orgStatusConfig[org.status].variant}
-                      className="flex items-center gap-1"
-                    >
+                    <Badge variant={orgStatusConfig[org.status].variant} className="flex items-center gap-1">
                       {orgStatusConfig[org.status].icon}
                       {orgStatusConfig[org.status].label}
                     </Badge>
@@ -229,17 +383,17 @@ export default function OrganizationDetailPage({
           loading={isLoading}
         />
         <StatCard
-          title="Membros ativos"
-          value={activeMembers}
-          description="Com acesso liberado"
+          title="Colaboradores"
+          value={collaborators.length}
+          description="Funcionários ativos"
           icon={<Users className="h-4 w-4" />}
           loading={isLoading}
         />
         <StatCard
-          title="Pendentes"
-          value={pendingMembers}
-          description="Aguardando aprovação"
-          icon={<Clock className="h-4 w-4" />}
+          title="Clientes"
+          value={clients.length}
+          description="Membros cadastrados"
+          icon={<Users className="h-4 w-4" />}
           loading={isLoading}
         />
         <StatCard
@@ -262,7 +416,7 @@ export default function OrganizationDetailPage({
       {/* ── Main grid ── */}
       <div className="grid gap-6 lg:grid-cols-3">
 
-        {/* ── Left: Locations + Members ── */}
+        {/* ── Left ── */}
         <div className="lg:col-span-2 flex flex-col gap-6">
 
           {/* Unidades */}
@@ -289,69 +443,25 @@ export default function OrganizationDetailPage({
             </div>
           </div>
 
-          {/* Membros */}
-          <div className="rounded-xl border bg-card shadow-sm">
-            <div className="px-5 py-4">
-              <h2 className="font-semibold">Membros</h2>
-              <p className="text-sm text-muted-foreground">
-                {isLoading ? "Carregando..." : `${members.length} vínculo${members.length !== 1 ? "s" : ""} na organização`}
-              </p>
-            </div>
-            <Separator />
-            <div className="divide-y">
-              {isLoading ? (
-                <div className="space-y-3 p-5">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <Skeleton className="h-8 w-8 rounded-full" />
-                      <div className="flex-1 space-y-1">
-                        <Skeleton className="h-3.5 w-28" />
-                        <Skeleton className="h-3 w-36" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : members.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  Nenhum membro cadastrado.
-                </p>
-              ) : (
-                members.slice(0, 8).map((member) => {
-                  const initials = member.user.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .slice(0, 2)
-                    .join("")
-                    .toUpperCase()
+          {/* Colaboradores */}
+          <MemberSection
+            title="Colaboradores"
+            description="Proprietários, administradores e staff da organização"
+            data={collaborators}
+            columns={memberColumns}
+            isLoading={isLoading}
+            emptyMessage="Nenhum colaborador cadastrado."
+          />
 
-                  return (
-                    <div key={member.id} className="flex items-center gap-3 px-5 py-3">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-                        {initials}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{member.user.name}</p>
-                        <p className="truncate text-xs text-muted-foreground">{member.user.email}</p>
-                      </div>
-                      <Badge variant="outline" className="shrink-0 text-xs">
-                        {memberRoleConfig[member.role] ?? member.role}
-                      </Badge>
-                    </div>
-                  )
-                })
-              )}
-            </div>
-            {members.length > 8 && (
-              <>
-                <Separator />
-                <div className="px-5 py-3 text-center">
-                  <p className="text-xs text-muted-foreground">
-                    +{members.length - 8} membros não exibidos
-                  </p>
-                </div>
-              </>
-            )}
-          </div>
+          {/* Clientes */}
+          <MemberSection
+            title="Clientes"
+            description="Membros com acesso aos espaços de coworking"
+            data={clients}
+            columns={memberColumns}
+            isLoading={isLoading}
+            emptyMessage="Nenhum cliente cadastrado."
+          />
         </div>
 
         {/* ── Right: Notes ── */}
