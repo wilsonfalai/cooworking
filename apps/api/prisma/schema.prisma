@@ -16,7 +16,7 @@ model User {
   email         String       @unique
   emailVerified Boolean
   image         String?
-  role          PlatformRole @default(USER)
+  role          PlatformRole @default(CLIENT)
   createdAt     DateTime
   updatedAt     DateTime
   sessions      Session[]
@@ -78,7 +78,8 @@ model Verification {
 
 enum PlatformRole {
   PLATFORM_ADMIN
-  USER
+  COLLABORATOR
+  CLIENT
 
   @@schema("cooworking2")
 }
@@ -169,6 +170,8 @@ model Member {
   status         MemberStatus @default(PENDING)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+
+  deletedAt    DateTime?
 
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)

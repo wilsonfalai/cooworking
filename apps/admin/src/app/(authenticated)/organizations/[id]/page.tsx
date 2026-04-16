@@ -21,6 +21,7 @@ import { type ColumnDef } from "@tanstack/react-table"
 import { useAuth } from "@/contexts/auth-context"
 import { getToken } from "@/lib/auth"
 import { api, type Organization, type Location, type Member, type MemberRole } from "@/lib/api"
+import { ApiError } from "@/lib/api"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -260,7 +261,7 @@ export default function OrganizationDetailPage({
   const [org, setOrg] = useState<Organization | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState("")
+  const [errorStatus, setErrorStatus] = useState<number | null>(null)
 
   useEffect(() => {
     if (authLoading || !user) return
@@ -275,7 +276,9 @@ export default function OrganizationDetailPage({
         setOrg(orgData)
         setMembers(membersData)
       })
-      .catch((err: Error) => setError(err.message))
+      .catch((err: unknown) => {
+        setErrorStatus(err instanceof ApiError ? err.status : 500)
+      })
       .finally(() => setIsLoading(false))
   }, [authLoading, user, id])
 
@@ -314,10 +317,40 @@ export default function OrganizationDetailPage({
   const activeMembers = members.filter((m) => m.status === "ACTIVE").length
   const pendingMembers = members.filter((m) => m.status === "PENDING").length
 
-  if (error) {
+  const myMemberRole = useMemo(() => {
+    if (!user || user.role === "PLATFORM_ADMIN") return null
+    return members.find((m) => m.userId === user.id)?.role ?? null
+  }, [members, user])
+
+  const canSeeCollaborators =
+    user?.role === "PLATFORM_ADMIN" || myMemberRole === "OWNER"
+
+  if (errorStatus === 403) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 p-12 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+          <XCircle className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">403 — Acesso negado</p>
+          <h2 className="mt-1 text-xl font-semibold">Você não tem acesso a esta organização</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Esta organização não está vinculada à sua conta.
+          </p>
+        </div>
+        <Link href="/dashboard" className="text-sm underline underline-offset-4 text-muted-foreground hover:text-foreground">
+          Voltar ao Dashboard
+        </Link>
+      </div>
+    )
+  }
+
+  if (errorStatus) {
     return (
       <div className="p-6">
-        <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>
+        <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          Erro ao carregar organização ({errorStatus}).
+        </div>
       </div>
     )
   }
@@ -327,9 +360,15 @@ export default function OrganizationDetailPage({
 
       {/* ── Breadcrumb ── */}
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Link href="/organizations" className="hover:text-foreground transition-colors">
-          Organizações
-        </Link>
+        {user?.role === "PLATFORM_ADMIN" ? (
+          <Link href="/organizations" className="hover:text-foreground transition-colors">
+            Organizações
+          </Link>
+        ) : (
+          <Link href="/dashboard" className="hover:text-foreground transition-colors">
+            Dashboard
+          </Link>
+        )}
         <ChevronRight className="h-3.5 w-3.5" />
         {isLoading ? (
           <Skeleton className="h-4 w-32" />
@@ -451,15 +490,17 @@ export default function OrganizationDetailPage({
             </div>
           </div>
 
-          {/* Colaboradores */}
-          <MemberSection
-            title="Colaboradores"
-            description="Proprietários, administradores e staff da organização"
-            data={collaborators}
-            columns={memberColumns}
-            isLoading={isLoading}
-            emptyMessage="Nenhum colaborador cadastrado."
-          />
+          {/* Colaboradores — visível apenas para PLATFORM_ADMIN e OWNER */}
+          {canSeeCollaborators && (
+            <MemberSection
+              title="Colaboradores"
+              description="Proprietários, administradores e staff da organização"
+              data={collaborators}
+              columns={memberColumns}
+              isLoading={isLoading}
+              emptyMessage="Nenhum colaborador cadastrado."
+            />
+          )}
 
           {/* Clientes */}
           <MemberSection

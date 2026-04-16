@@ -3,6 +3,7 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
+import { PlatformRole } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { MembersService } from '../members/members.service.js';
 import { CreateLocationDto } from './dto/create-location.dto.js';
@@ -50,9 +51,22 @@ export class LocationsService {
     return location;
   }
 
-  async findAllByOrg(organizationId: string) {
+  async findAllByOrg(
+    organizationId: string,
+    user: { id: string; role: PlatformRole },
+  ) {
+    const where =
+      user.role === PlatformRole.PLATFORM_ADMIN
+        ? { organizationId }
+        : {
+            organizationId,
+            members: {
+              some: { userId: user.id, status: 'ACTIVE' as const },
+            },
+          };
+
     return this.prisma.location.findMany({
-      where: { organizationId },
+      where,
       orderBy: { createdAt: 'desc' },
     });
   }

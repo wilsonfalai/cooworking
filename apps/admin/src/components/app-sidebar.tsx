@@ -22,57 +22,70 @@ import {
   Settings2Icon,
 } from "lucide-react"
 
-const data = {
-  teams: [
-    {
-      name: "Cooworking Admin",
-      logo: <ShieldCheckIcon />,
-      plan: "Platform",
-    },
-  ],
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: <LayoutDashboardIcon />,
-      isActive: true,
-      items: [],
-    },
-    {
-      title: "Organizações",
-      url: "/organizations",
-      icon: <BuildingIcon />,
-      items: [
-        { title: "Listar", url: "/organizations" },
-      ],
-    },
-    {
-      title: "Locais",
-      url: "/locations",
-      icon: <MapPinIcon />,
-      items: [
-        { title: "Listar", url: "/locations" },
-      ],
-    },
-    {
-      title: "Usuários",
-      url: "/users",
-      icon: <UsersIcon />,
-      items: [
-        { title: "Listar", url: "/users" },
-      ],
-    },
-    {
-      title: "Configurações",
-      url: "/settings",
-      icon: <Settings2Icon />,
-      items: [],
-    },
-  ],
-}
+const teams = [
+  {
+    name: "Cooworking Admin",
+    logo: <ShieldCheckIcon />,
+    plan: "Platform",
+  },
+]
+
+const baseNavItems = [
+  {
+    title: "Dashboard",
+    url: "/dashboard",
+    icon: <LayoutDashboardIcon />,
+    isActive: true,
+    items: [],
+  },
+  {
+    title: "Locais",
+    url: "/locations",
+    icon: <MapPinIcon />,
+    items: [{ title: "Listar", url: "/locations" }],
+  },
+  {
+    title: "Configurações",
+    url: "/settings",
+    icon: <Settings2Icon />,
+    items: [],
+  },
+]
+
+const platformAdminNavItems = [
+  {
+    title: "Organizações",
+    url: "/organizations",
+    icon: <BuildingIcon />,
+    items: [{ title: "Listar", url: "/organizations" }],
+  },
+  {
+    title: "Usuários",
+    url: "/users",
+    icon: <UsersIcon />,
+    items: [{ title: "Listar", url: "/users" }],
+  },
+]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user } = useAuth()
+  const { user, organization } = useAuth()
+
+  const isPlatformAdmin = user?.role === "PLATFORM_ADMIN"
+
+  const collaboratorOrgItem = organization
+    ? [
+        {
+          title: "Meu Cooworking",
+          url: `/organizations/${organization.id}`,
+          icon: <BuildingIcon />,
+          items: [],
+        },
+      ]
+    : []
+
+  const navItems = isPlatformAdmin
+    ? [baseNavItems[0], ...platformAdminNavItems, ...baseNavItems.slice(1)]
+    : [baseNavItems[0], ...collaboratorOrgItem, ...baseNavItems.slice(1)]
 
   const sidebarUser = {
     name: user?.name ?? "",
@@ -83,10 +96,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher teams={teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navItems} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={sidebarUser} />

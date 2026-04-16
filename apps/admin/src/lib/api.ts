@@ -2,7 +2,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-export type PlatformRole = "PLATFORM_ADMIN" | "USER";
+export type PlatformRole = "PLATFORM_ADMIN" | "COLLABORATOR" | "CLIENT";
 export type MemberRole = "OWNER" | "ADMIN" | "STAFF" | "MEMBER";
 export type MemberStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED" | "PENDING";
 export type OrganizationStatus = "ACTIVE" | "SUSPENDED" | "TRIAL";
@@ -179,6 +179,11 @@ export const api = {
   organizations: {
     list(token: string) {
       return request<Organization[]>("/organizations", {
+        headers: authHeaders(token),
+      });
+    },
+    getMine(token: string) {
+      return request<Organization>("/organizations/my", {
         headers: authHeaders(token),
       });
     },

@@ -1,8 +1,10 @@
 import {
   Injectable,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { PlatformRole } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
 import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
@@ -41,13 +43,38 @@ export class OrganizationsService {
     });
   }
 
-  async findOne(id: string) {
+  private async findOneById(id: string) {
     const org = await this.prisma.organization.findUnique({
       where: { id },
       include: { locations: true },
     });
     if (!org) throw new NotFoundException('Organization not found');
     return org;
+  }
+
+  async findOne(id: string, user: { id: string; role: PlatformRole }) {
+    const org = await this.findOneById(id);
+
+    if (user.role === PlatformRole.COLLABORATOR) {
+      const member = await this.prisma.member.findFirst({
+        where: { organizationId: id, userId: user.id },
+      });
+      if (!member) throw new ForbiddenException('Access denied to this organization');
+    }
+
+    return org;
+  }
+
+  async findByUserId(userId: string) {
+    const member = await this.prisma.member.findFirst({
+      where: { userId },
+      include: {
+        organization: { include: { locations: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!member) throw new NotFoundException('No organization found for this user');
+    return member.organization;
   }
 
   async findBySlug(slug: string) {
@@ -60,7 +87,7 @@ export class OrganizationsService {
   }
 
   async update(id: string, dto: UpdateOrganizationDto) {
-    await this.findOne(id);
+    await this.findOneById(id);
 
     if (dto.slug) {
       const existing = await this.prisma.organization.findUnique({
@@ -75,7 +102,7 @@ export class OrganizationsService {
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    await this.findOneById(id);
     return this.prisma.organization.delete({ where: { id } });
   }
 }

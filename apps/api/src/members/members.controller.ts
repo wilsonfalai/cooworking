@@ -11,6 +11,9 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { PlatformRole } from '../generated/prisma/client.js';
+import { Roles } from '../common/decorators/roles.decorator.js';
+import { RolesGuard } from '../common/guards/roles.guard.js';
 import { MembersService } from './members.service.js';
 import { CreateMemberDto } from './dto/create-member.dto.js';
 import { UpdateMemberDto } from './dto/update-member.dto.js';
@@ -18,7 +21,8 @@ import { UpdateMemberDto } from './dto/update-member.dto.js';
 @ApiTags('Members')
 @ApiBearerAuth()
 @Controller('organizations/:orgId/members')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles(PlatformRole.PLATFORM_ADMIN, PlatformRole.COLLABORATOR)
 export class MembersController {
   constructor(private readonly membersService: MembersService) {}
 

@@ -10,6 +10,10 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { PlatformRole } from '../generated/prisma/client.js';
+import { Roles } from '../common/decorators/roles.decorator.js';
+import { RolesGuard } from '../common/guards/roles.guard.js';
+import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { OrganizationsService } from './organizations.service.js';
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
 import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
@@ -17,33 +21,47 @@ import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
 @ApiTags('Organizations')
 @ApiBearerAuth()
 @Controller('organizations')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class OrganizationsController {
   constructor(
     private readonly organizationsService: OrganizationsService,
   ) {}
 
   @Post()
+  @Roles(PlatformRole.PLATFORM_ADMIN)
   create(@Body() dto: CreateOrganizationDto) {
     return this.organizationsService.create(dto);
   }
 
   @Get()
+  @Roles(PlatformRole.PLATFORM_ADMIN)
   findAll() {
     return this.organizationsService.findAll();
   }
 
+  @Get('my')
+  @Roles(PlatformRole.COLLABORATOR)
+  findMine(@CurrentUser() user: { id: string }) {
+    return this.organizationsService.findByUserId(user.id);
+  }
+
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.organizationsService.findOne(id);
+  @Roles(PlatformRole.PLATFORM_ADMIN, PlatformRole.COLLABORATOR)
+  findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string; role: PlatformRole },
+  ) {
+    return this.organizationsService.findOne(id, user);
   }
 
   @Put(':id')
+  @Roles(PlatformRole.PLATFORM_ADMIN)
   update(@Param('id') id: string, @Body() dto: UpdateOrganizationDto) {
     return this.organizationsService.update(id, dto);
   }
 
   @Delete(':id')
+  @Roles(PlatformRole.PLATFORM_ADMIN)
   remove(@Param('id') id: string) {
     return this.organizationsService.remove(id);
   }

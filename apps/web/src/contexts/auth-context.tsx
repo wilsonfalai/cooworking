@@ -33,7 +33,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     api.auth
       .me(token)
-      .then(setUser)
+      .then((me) => {
+        if (me.role !== "CLIENT") {
+          removeToken();
+          return;
+        }
+        setUser(me);
+      })
       .catch(() => removeToken())
       .finally(() => setLoading(false));
   }, []);
@@ -43,8 +49,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { accessToken } = await api.auth.login(email, password);
       const me = await api.auth.me(accessToken);
 
-      if (me.role === "PLATFORM_ADMIN") {
-        throw new Error("Acesso restrito. Administradores da plataforma devem usar o painel administrativo.");
+      if (me.role !== "CLIENT") {
+        throw new Error(
+          "Acesso restrito. Use o painel administrativo para acessar com esta conta.",
+        );
       }
 
       setToken(accessToken);
