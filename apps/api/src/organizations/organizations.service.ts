@@ -4,7 +4,6 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { PlatformRole } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateOrganizationDto } from './dto/create-organization.dto.js';
 import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
@@ -52,10 +51,10 @@ export class OrganizationsService {
     return org;
   }
 
-  async findOne(id: string, user: { id: string; role: PlatformRole }) {
+  async findOne(id: string, user: { id: string; isCollaborator: boolean }) {
     const org = await this.findOneById(id);
 
-    if (user.role === PlatformRole.COLLABORATOR) {
+    if (user.isCollaborator) {
       const member = await this.prisma.member.findFirst({
         where: { organizationId: id, userId: user.id },
       });

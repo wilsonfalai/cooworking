@@ -16,7 +16,7 @@ model User {
   email         String       @unique
   emailVerified Boolean
   image         String?
-  role          PlatformRole @default(CLIENT)
+  role          PlatformRole @default(USER)
   createdAt     DateTime
   updatedAt     DateTime
   sessions      Session[]
@@ -78,8 +78,7 @@ model Verification {
 
 enum PlatformRole {
   PLATFORM_ADMIN
-  COLLABORATOR
-  CLIENT
+  USER
 
   @@schema("cooworking2")
 }

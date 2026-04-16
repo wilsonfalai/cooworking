@@ -4,7 +4,8 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: "PLATFORM_ADMIN" | "COLLABORATOR" | "CLIENT";
+  role: "PLATFORM_ADMIN" | "USER";
+  isCollaborator: boolean;
   emailVerified: boolean;
   image: string | null;
   createdAt: string;
@@ -29,11 +30,11 @@ async function request<T>(
   options?: RequestInit,
 ): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
+    ...options,
     headers: {
       "Content-Type": "application/json",
       ...options?.headers,
     },
-    ...options,
   });
 
   if (!res.ok) {

@@ -2,7 +2,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-export type PlatformRole = "PLATFORM_ADMIN" | "COLLABORATOR" | "CLIENT";
+export type PlatformRole = "PLATFORM_ADMIN" | "USER";
 export type MemberRole = "OWNER" | "ADMIN" | "STAFF" | "MEMBER";
 export type MemberStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED" | "PENDING";
 export type OrganizationStatus = "ACTIVE" | "SUSPENDED" | "TRIAL";
@@ -15,10 +15,17 @@ export interface User {
   email: string;
   name: string;
   role: PlatformRole;
+  isCollaborator: boolean;
   emailVerified: boolean;
   image: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UserLookup {
+  id: string;
+  name: string;
+  email: string;
 }
 
 export interface Organization {
@@ -140,11 +147,11 @@ class ApiError extends Error {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
+    ...options,
     headers: {
       "Content-Type": "application/json",
       ...options?.headers,
     },
-    ...options,
   });
 
   if (!res.ok) {
@@ -152,7 +159,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     throw new ApiError(res.status, body.message || res.statusText);
   }
 
-  return res.json();
+  const text = await res.text();
+  return text ? (JSON.parse(text) as T) : (null as T);
 }
 
 function authHeaders(token: string) {
@@ -290,6 +298,18 @@ export const api = {
     get(token: string, id: string) {
       return request<UserDetail>(`/users/${id}`, {
         headers: authHeaders(token),
+      });
+    },
+    lookup(token: string, email: string) {
+      return request<UserLookup | null>(`/users/lookup?email=${encodeURIComponent(email)}`, {
+        headers: authHeaders(token),
+      });
+    },
+    create(token: string, data: { name: string; email: string; password: string }) {
+      return request<User>("/users", {
+        method: "POST",
+        headers: authHeaders(token),
+        body: JSON.stringify(data),
       });
     },
   },

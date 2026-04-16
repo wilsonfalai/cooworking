@@ -36,12 +36,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     api.auth
       .me(token)
       .then(async (me) => {
-        if (me.role !== "PLATFORM_ADMIN" && me.role !== "COLLABORATOR") {
+        if (me.role !== "PLATFORM_ADMIN" && !me.isCollaborator) {
           removeToken();
           return;
         }
         setUser(me);
-        if (me.role === "COLLABORATOR") {
+        if (me.isCollaborator) {
           const org = await api.organizations.getMine(token).catch(() => null);
           setOrganization(org);
         }
@@ -55,14 +55,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { accessToken } = await api.auth.login(email, password);
       const me = await api.auth.me(accessToken);
 
-      if (me.role !== "PLATFORM_ADMIN" && me.role !== "COLLABORATOR") {
+      if (me.role !== "PLATFORM_ADMIN" && !me.isCollaborator) {
         throw new Error("Acesso restrito a administradores e colaboradores.");
       }
 
       setToken(accessToken);
       setUser(me);
 
-      if (me.role === "COLLABORATOR") {
+      if (me.isCollaborator) {
         const org = await api.organizations.getMine(accessToken).catch(() => null);
         setOrganization(org);
         router.push(`/organizations/${org?.id ?? ""}`);

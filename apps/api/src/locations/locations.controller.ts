@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { PlatformRole } from '../generated/prisma/client.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
@@ -22,7 +21,7 @@ import { UpdateLocationDto } from './dto/update-location.dto.js';
 @ApiBearerAuth()
 @Controller('organizations/:orgId/locations')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
-@Roles(PlatformRole.PLATFORM_ADMIN, PlatformRole.COLLABORATOR)
+@Roles('PLATFORM_ADMIN', 'COLLABORATOR')
 export class LocationsController {
   constructor(private readonly locationsService: LocationsService) {}
 
@@ -34,7 +33,7 @@ export class LocationsController {
   @Get()
   findAll(
     @Param('orgId') orgId: string,
-    @CurrentUser() user: { id: string; role: PlatformRole },
+    @CurrentUser() user: { id: string; role: string; isCollaborator: boolean },
   ) {
     return this.locationsService.findAllByOrg(orgId, user);
   }

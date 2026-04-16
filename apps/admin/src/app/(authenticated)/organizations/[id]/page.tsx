@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { use } from "react"
 import Link from "next/link"
 import {
@@ -15,6 +15,7 @@ import {
   AlertCircle,
   MoreHorizontal,
   ExternalLink,
+  UserPlus,
 } from "lucide-react"
 import { type ColumnDef } from "@tanstack/react-table"
 
@@ -34,6 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { RegisterMemberSheet } from "@/components/members/register-member-sheet"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -207,47 +209,6 @@ function StatCard({
   )
 }
 
-// ─── Member section ───────────────────────────────────────────────────────────
-
-function MemberSection({
-  title,
-  description,
-  data,
-  columns,
-  isLoading,
-  emptyMessage,
-}: {
-  title: string
-  description: string
-  data: GroupedMember[]
-  columns: ColumnDef<GroupedMember>[]
-  isLoading: boolean
-  emptyMessage: string
-}) {
-  return (
-    <div className="rounded-xl border bg-card shadow-sm">
-      <div className="px-5 py-4">
-        <h2 className="font-semibold">{title}</h2>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </div>
-      <Separator />
-      <div className="p-5">
-        {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
-            ))}
-          </div>
-        ) : data.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">{emptyMessage}</p>
-        ) : (
-          <DataTable columns={columns} data={data} searchColumn="user" searchPlaceholder="Buscar por nome..." />
-        )}
-      </div>
-    </div>
-  )
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function OrganizationDetailPage({
@@ -262,25 +223,30 @@ export default function OrganizationDetailPage({
   const [members, setMembers] = useState<Member[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorStatus, setErrorStatus] = useState<number | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
+
+  const loadData = useCallback(async () => {
+    const token = getToken()
+    if (!token) return
+    setIsLoading(true)
+    try {
+      const [orgData, membersData] = await Promise.all([
+        api.organizations.get(token, id),
+        api.members.list(token, id),
+      ])
+      setOrg(orgData)
+      setMembers(membersData)
+    } catch (err: unknown) {
+      setErrorStatus(err instanceof ApiError ? err.status : 500)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [id])
 
   useEffect(() => {
     if (authLoading || !user) return
-    const token = getToken()
-    if (!token) return
-
-    Promise.all([
-      api.organizations.get(token, id),
-      api.members.list(token, id),
-    ])
-      .then(([orgData, membersData]) => {
-        setOrg(orgData)
-        setMembers(membersData)
-      })
-      .catch((err: unknown) => {
-        setErrorStatus(err instanceof ApiError ? err.status : 500)
-      })
-      .finally(() => setIsLoading(false))
-  }, [authLoading, user, id])
+    loadData()
+  }, [authLoading, user, loadData])
 
   // ── Grouped members ──
   const { collaborators, clients } = useMemo(() => {
@@ -492,25 +458,61 @@ export default function OrganizationDetailPage({
 
           {/* Colaboradores — visível apenas para PLATFORM_ADMIN e OWNER */}
           {canSeeCollaborators && (
-            <MemberSection
-              title="Colaboradores"
-              description="Proprietários, administradores e staff da organização"
-              data={collaborators}
-              columns={memberColumns}
-              isLoading={isLoading}
-              emptyMessage="Nenhum colaborador cadastrado."
-            />
+            <div className="rounded-xl border bg-card shadow-sm">
+              <div className="px-5 py-4 flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="font-semibold">Colaboradores</h2>
+                  <p className="text-sm text-muted-foreground">Proprietários, administradores e staff da organização</p>
+                </div>
+                <Button size="sm" onClick={() => setSheetOpen(true)}>
+                  <UserPlus className="h-4 w-4 mr-1.5" />
+                  Adicionar
+                </Button>
+              </div>
+              <Separator />
+              <div className="p-5">
+                {isLoading ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full" />
+                    ))}
+                  </div>
+                ) : collaborators.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">Nenhum colaborador cadastrado.</p>
+                ) : (
+                  <DataTable columns={memberColumns} data={collaborators} searchColumn="user" searchPlaceholder="Buscar por nome..." />
+                )}
+              </div>
+            </div>
           )}
 
           {/* Clientes */}
-          <MemberSection
-            title="Clientes"
-            description="Membros com acesso aos espaços de coworking"
-            data={clients}
-            columns={memberColumns}
-            isLoading={isLoading}
-            emptyMessage="Nenhum cliente cadastrado."
-          />
+          <div className="rounded-xl border bg-card shadow-sm">
+            <div className="px-5 py-4 flex items-center justify-between gap-4">
+              <div>
+                <h2 className="font-semibold">Clientes</h2>
+                <p className="text-sm text-muted-foreground">Membros com acesso aos espaços de coworking</p>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => setSheetOpen(true)}>
+                <UserPlus className="h-4 w-4 mr-1.5" />
+                Adicionar
+              </Button>
+            </div>
+            <Separator />
+            <div className="p-5">
+              {isLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-full" />
+                  ))}
+                </div>
+              ) : clients.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">Nenhum cliente cadastrado.</p>
+              ) : (
+                <DataTable columns={memberColumns} data={clients} searchColumn="user" searchPlaceholder="Buscar por nome..." />
+              )}
+            </div>
+          </div>
         </div>
 
         {/* ── Right: Notes ── */}
@@ -533,6 +535,14 @@ export default function OrganizationDetailPage({
         </div>
 
       </div>
+
+      <RegisterMemberSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        orgId={id}
+        locations={locations}
+        onSuccess={loadData}
+      />
     </div>
   )
 }
