@@ -38,9 +38,20 @@ export class MembersService {
     });
   }
 
-  async findAllByOrg(organizationId: string) {
+  /**
+   * Returns all members of an organization.
+   *
+   * When `adminLocationIds` is provided (for non-PLATFORM_ADMIN callers), the result
+   * is scoped to the locations where the requester is OWNER or ADMIN. This ensures
+   * that a user who is ADMIN at Location B cannot see members from Location A.
+   */
+  async findAllByOrg(organizationId: string, adminLocationIds?: string[]) {
+    const where = {
+      organizationId,
+      ...(adminLocationIds ? { locationId: { in: adminLocationIds } } : {}),
+    };
     return this.prisma.member.findMany({
-      where: { organizationId },
+      where,
       include: { user: { select: { id: true, name: true, email: true } }, location: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -63,13 +74,19 @@ export class MembersService {
     return member;
   }
 
-  async update(organizationId: string, id: string, dto: UpdateMemberDto) {
-    await this.findOne(organizationId, id);
-    return this.prisma.member.update({
+  async update(organizationId: string, id: string, dto: UpdateMemberDto, changedBy?: string) {
+    const existing = await this.findOne(organizationId, id);
+    const updated = await this.prisma.member.update({
       where: { id },
       data: dto,
       include: { user: { select: { id: true, name: true, email: true } }, location: true },
     });
+    if (dto.role && dto.role !== existing.role) {
+      await this.prisma.memberRoleHistory.create({
+        data: { memberId: id, fromRole: existing.role, toRole: dto.role, changedBy },
+      });
+    }
+    return updated;
   }
 
   async remove(organizationId: string, id: string) {

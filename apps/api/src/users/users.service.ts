@@ -62,8 +62,12 @@ export class UsersService {
   }
 
   /**
-   * Returns the user with an `isCollaborator` flag derived from Member records.
-   * Used by JwtStrategy so every request knows if the user has collaborator access.
+   * Returns the user enriched with membership context for every request.
+   *
+   * `isCollaborator` — true if the user has at least one active OWNER/ADMIN/STAFF membership.
+   * `memberships`   — all active OWNER/ADMIN/STAFF memberships with locationId + organizationId + role.
+   *                   Used to scope data access per location (e.g. an ADMIN at Location B should
+   *                   only see collaborators from Location B, not the whole organization).
    */
   async findByIdWithCollaboratorStatus(id: string) {
     const user = await this.prisma.user.findUnique({
@@ -75,14 +79,17 @@ export class UsersService {
             role: { in: ['OWNER', 'ADMIN', 'STAFF'] },
             status: 'ACTIVE',
           },
-          select: { organizationId: true },
-          take: 1,
+          select: { locationId: true, organizationId: true, role: true },
         },
       },
     });
     if (!user) return null;
     const { members, ...rest } = user;
-    return { ...rest, isCollaborator: members.length > 0 };
+    return {
+      ...rest,
+      isCollaborator: members.length > 0,
+      memberships: members,
+    };
   }
 
   /**

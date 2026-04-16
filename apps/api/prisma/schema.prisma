@@ -172,11 +172,25 @@ model Member {
 
   deletedAt    DateTime?
 
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  location     Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location     Location            @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  roleHistory  MemberRoleHistory[]
 
   @@unique([userId, locationId])
   @@map("member")
+  @@schema("cooworking2")
+}
+
+model MemberRoleHistory {
+  id        String     @id @default(uuid())
+  memberId  String
+  member    Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  fromRole  MemberRole
+  toRole    MemberRole
+  changedBy String?
+  changedAt DateTime   @default(now())
+
+  @@map("member_role_history")
   @@schema("cooworking2")
 }

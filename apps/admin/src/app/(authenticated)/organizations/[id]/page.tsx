@@ -16,6 +16,7 @@ import {
   MoreHorizontal,
   ExternalLink,
   UserPlus,
+  Plus,
 } from "lucide-react"
 import { type ColumnDef } from "@tanstack/react-table"
 
@@ -36,6 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { RegisterMemberSheet } from "@/components/members/register-member-sheet"
+import { RegisterLocationSheet } from "@/components/locations/register-location-sheet"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -223,7 +225,8 @@ export default function OrganizationDetailPage({
   const [members, setMembers] = useState<Member[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorStatus, setErrorStatus] = useState<number | null>(null)
-  const [sheetOpen, setSheetOpen] = useState(false)
+  const [memberSheetOpen, setMemberSheetOpen] = useState(false)
+  const [locationSheetOpen, setLocationSheetOpen] = useState(false)
 
   const loadData = useCallback(async () => {
     const token = getToken()
@@ -289,6 +292,9 @@ export default function OrganizationDetailPage({
   }, [members, user])
 
   const canSeeCollaborators =
+    user?.role === "PLATFORM_ADMIN" || myMemberRole === "OWNER"
+
+  const canManageUnits =
     user?.role === "PLATFORM_ADMIN" || myMemberRole === "OWNER"
 
   if (errorStatus === 403) {
@@ -434,9 +440,17 @@ export default function OrganizationDetailPage({
 
           {/* Unidades */}
           <div className="rounded-xl border bg-card shadow-sm">
-            <div className="px-5 py-4">
-              <h2 className="font-semibold">Unidades</h2>
-              <p className="text-sm text-muted-foreground">Locais vinculados a esta organização</p>
+            <div className="px-5 py-4 flex items-center justify-between gap-4">
+              <div>
+                <h2 className="font-semibold">Unidades</h2>
+                <p className="text-sm text-muted-foreground">Locais vinculados a esta organização</p>
+              </div>
+              {canManageUnits && (
+                <Button size="sm" onClick={() => setLocationSheetOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Nova unidade
+                </Button>
+              )}
             </div>
             <Separator />
             <div className="p-5">
@@ -464,7 +478,7 @@ export default function OrganizationDetailPage({
                   <h2 className="font-semibold">Colaboradores</h2>
                   <p className="text-sm text-muted-foreground">Proprietários, administradores e staff da organização</p>
                 </div>
-                <Button size="sm" onClick={() => setSheetOpen(true)}>
+                <Button size="sm" onClick={() => setMemberSheetOpen(true)}>
                   <UserPlus className="h-4 w-4 mr-1.5" />
                   Adicionar
                 </Button>
@@ -493,7 +507,7 @@ export default function OrganizationDetailPage({
                 <h2 className="font-semibold">Clientes</h2>
                 <p className="text-sm text-muted-foreground">Membros com acesso aos espaços de coworking</p>
               </div>
-              <Button size="sm" variant="outline" onClick={() => setSheetOpen(true)}>
+              <Button size="sm" variant="outline" onClick={() => setMemberSheetOpen(true)}>
                 <UserPlus className="h-4 w-4 mr-1.5" />
                 Adicionar
               </Button>
@@ -537,10 +551,17 @@ export default function OrganizationDetailPage({
       </div>
 
       <RegisterMemberSheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
+        open={memberSheetOpen}
+        onOpenChange={setMemberSheetOpen}
         orgId={id}
         locations={locations}
+        onSuccess={loadData}
+      />
+
+      <RegisterLocationSheet
+        open={locationSheetOpen}
+        onOpenChange={setLocationSheetOpen}
+        orgId={id}
         onSuccess={loadData}
       />
     </div>

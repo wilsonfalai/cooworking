@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -32,13 +33,23 @@ export class MembersController {
 
   @Get()
   findAll(
+    @Req() req: any,
     @Param('orgId') orgId: string,
     @Query('locationId') locationId?: string,
   ) {
     if (locationId) {
       return this.membersService.findAllByLocation(orgId, locationId);
     }
-    return this.membersService.findAllByOrg(orgId);
+    // PLATFORM_ADMIN sees all members in the org.
+    // Everyone else (OWNER/ADMIN/STAFF) only sees members from locations
+    // where they hold OWNER or ADMIN role — not STAFF-only locations.
+    if (req.user?.role === 'PLATFORM_ADMIN') {
+      return this.membersService.findAllByOrg(orgId);
+    }
+    const adminLocationIds: string[] = (req.user?.memberships ?? [])
+      .filter((m: { role: string }) => m.role === 'OWNER' || m.role === 'ADMIN')
+      .map((m: { locationId: string }) => m.locationId);
+    return this.membersService.findAllByOrg(orgId, adminLocationIds);
   }
 
   @Get(':id')
@@ -48,11 +59,12 @@ export class MembersController {
 
   @Put(':id')
   update(
+    @Req() req: any,
     @Param('orgId') orgId: string,
     @Param('id') id: string,
     @Body() dto: UpdateMemberDto,
   ) {
-    return this.membersService.update(orgId, id, dto);
+    return this.membersService.update(orgId, id, dto, req.user?.id);
   }
 
   @Delete(':id')
