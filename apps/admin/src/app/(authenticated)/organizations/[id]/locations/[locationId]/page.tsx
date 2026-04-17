@@ -23,6 +23,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { getToken } from "@/lib/auth"
 import {
   api,
+  ApiError,
   type Organization,
   type Location,
   type Member,
@@ -237,7 +238,7 @@ export default function LocationDetailPage({
   const [location, setLocation] = useState<Location | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState("")
+  const [errorStatus, setErrorStatus] = useState<number | null>(null)
 
   useEffect(() => {
     if (authLoading || !user) return
@@ -254,9 +255,15 @@ export default function LocationDetailPage({
         setLocation(locationData)
         setMembers(membersData)
       })
-      .catch((err: Error) => setError(err.message))
+      .catch((err: unknown) => setErrorStatus(err instanceof ApiError ? err.status : 500))
       .finally(() => setIsLoading(false))
   }, [authLoading, user, orgId, locationId])
+
+  // ── Current user's membership in this location ──
+  const myMembership = useMemo(() => {
+    if (!user || isLoading) return undefined
+    return members.find((m) => m.userId === user.id) ?? null
+  }, [members, user, isLoading])
 
   // ── Split members by tier ──
   const { collaborators, clients } = useMemo(() => {
@@ -278,10 +285,32 @@ export default function LocationDetailPage({
     .filter(Boolean)
     .join(", ")
 
-  if (error) {
+  if (errorStatus === 403 || myMembership === null) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 p-12 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+          <XCircle className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">403 — Acesso negado</p>
+          <h2 className="mt-1 text-xl font-semibold">Você não é membro desta unidade</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Seu acesso não inclui esta unidade.
+          </p>
+        </div>
+        <Link href="/dashboard" className="text-sm underline underline-offset-4 text-muted-foreground hover:text-foreground">
+          Voltar ao Dashboard
+        </Link>
+      </div>
+    )
+  }
+
+  if (errorStatus) {
     return (
       <div className="p-6">
-        <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>
+        <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          Erro ao carregar unidade ({errorStatus}).
+        </div>
       </div>
     )
   }
