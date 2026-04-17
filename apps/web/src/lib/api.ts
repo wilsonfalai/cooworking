@@ -4,7 +4,6 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: "PLATFORM_ADMIN" | "USER";
   isCollaborator: boolean;
   emailVerified: boolean;
   image: string | null;

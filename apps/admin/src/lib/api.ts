@@ -2,7 +2,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-export type PlatformRole = "PLATFORM_ADMIN" | "USER";
 export type MemberRole = "OWNER" | "ADMIN" | "STAFF" | "MEMBER";
 export type MemberStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED" | "PENDING";
 export type OrganizationStatus = "ACTIVE" | "SUSPENDED" | "TRIAL";
@@ -14,7 +13,6 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: PlatformRole;
   isCollaborator: boolean;
   emailVerified: boolean;
   image: string | null;

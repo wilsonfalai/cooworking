@@ -6,8 +6,6 @@ import Link from "next/link"
 import {
   User as UserIcon,
   Mail,
-  Shield,
-  ShieldCheck,
   Clock,
   Building2,
   MapPin,
@@ -224,15 +222,6 @@ export default function UserDetailPage({
             <>
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h1 className="text-2xl font-semibold tracking-tight">{user?.name}</h1>
-                <Badge
-                  variant={user?.role === "PLATFORM_ADMIN" ? "default" : "secondary"}
-                  className="flex items-center gap-1"
-                >
-                  {user?.role === "PLATFORM_ADMIN"
-                    ? <><ShieldCheck className="h-3.5 w-3.5" /> Admin da Plataforma</>
-                    : <><Shield className="h-3.5 w-3.5" /> Usuário</>
-                  }
-                </Badge>
                 {user?.emailVerified
                   ? <span className="flex items-center gap-1 text-xs text-green-600"><CheckCircle2 className="h-3.5 w-3.5" /> Email verificado</span>
                   : <span className="flex items-center gap-1 text-xs text-muted-foreground"><XCircle className="h-3.5 w-3.5" /> Email não verificado</span>
@@ -332,10 +321,6 @@ export default function UserDetailPage({
               {[
                 { label: "Nome completo", value: user?.name },
                 { label: "Email", value: user?.email },
-                {
-                  label: "Papel na plataforma",
-                  value: user?.role === "PLATFORM_ADMIN" ? "Admin da Plataforma" : "Usuário",
-                },
                 {
                   label: "Email verificado",
                   value: user?.emailVerified ? "Sim" : "Não",

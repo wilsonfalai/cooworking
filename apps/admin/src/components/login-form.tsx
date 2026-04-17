@@ -85,7 +85,7 @@ export function LoginForm({
                   {loading ? "Entrando..." : "Entrar"}
                 </Button>
                 <FieldDescription className="text-center">
-                  Somente usuários com role PLATFORM_ADMIN.
+                  Acesso restrito a colaboradores.
                 </FieldDescription>
               </Field>
             </FieldGroup>

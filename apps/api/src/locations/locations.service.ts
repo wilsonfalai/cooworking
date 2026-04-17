@@ -52,20 +52,15 @@ export class LocationsService {
 
   async findAllByOrg(
     organizationId: string,
-    user: { id: string; role: string; isCollaborator: boolean },
+    user: { id: string },
   ) {
-    const where =
-      !user.isCollaborator
-        ? { organizationId }
-        : {
-            organizationId,
-            members: {
-              some: { userId: user.id, status: 'ACTIVE' as const },
-            },
-          };
-
     return this.prisma.location.findMany({
-      where,
+      where: {
+        organizationId,
+        members: {
+          some: { userId: user.id, status: 'ACTIVE' as const },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }

@@ -21,46 +21,41 @@ import { UpdateOrganizationDto } from './dto/update-organization.dto.js';
 @ApiBearerAuth()
 @Controller('organizations')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles('COLLABORATOR')
 export class OrganizationsController {
   constructor(
     private readonly organizationsService: OrganizationsService,
   ) {}
 
   @Post()
-  @Roles('PLATFORM_ADMIN')
   create(@Body() dto: CreateOrganizationDto) {
     return this.organizationsService.create(dto);
   }
 
   @Get()
-  @Roles('PLATFORM_ADMIN')
   findAll() {
     return this.organizationsService.findAll();
   }
 
   @Get('my')
-  @Roles('COLLABORATOR')
   findMine(@CurrentUser() user: { id: string }) {
     return this.organizationsService.findByUserId(user.id);
   }
 
   @Get(':id')
-  @Roles('PLATFORM_ADMIN', 'COLLABORATOR')
   findOne(
     @Param('id') id: string,
-    @CurrentUser() user: { id: string; role: string; isCollaborator: boolean },
+    @CurrentUser() user: { id: string; isCollaborator: boolean },
   ) {
     return this.organizationsService.findOne(id, user);
   }
 
   @Put(':id')
-  @Roles('PLATFORM_ADMIN')
   update(@Param('id') id: string, @Body() dto: UpdateOrganizationDto) {
     return this.organizationsService.update(id, dto);
   }
 
   @Delete(':id')
-  @Roles('PLATFORM_ADMIN')
   remove(@Param('id') id: string) {
     return this.organizationsService.remove(id);
   }

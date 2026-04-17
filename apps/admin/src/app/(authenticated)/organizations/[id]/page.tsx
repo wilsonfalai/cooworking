@@ -287,15 +287,13 @@ export default function OrganizationDetailPage({
   const pendingMembers = members.filter((m) => m.status === "PENDING").length
 
   const myMemberRole = useMemo(() => {
-    if (!user || user.role === "PLATFORM_ADMIN") return null
+    if (!user) return null
     return members.find((m) => m.userId === user.id)?.role ?? null
   }, [members, user])
 
-  const canSeeCollaborators =
-    user?.role === "PLATFORM_ADMIN" || myMemberRole === "OWNER"
+  const canSeeCollaborators = myMemberRole === "OWNER"
 
-  const canManageUnits =
-    user?.role === "PLATFORM_ADMIN" || myMemberRole === "OWNER"
+  const canManageUnits = myMemberRole === "OWNER"
 
   if (errorStatus === 403) {
     return (
@@ -332,15 +330,9 @@ export default function OrganizationDetailPage({
 
       {/* ── Breadcrumb ── */}
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        {user?.role === "PLATFORM_ADMIN" ? (
-          <Link href="/organizations" className="hover:text-foreground transition-colors">
-            Organizações
-          </Link>
-        ) : (
-          <Link href="/dashboard" className="hover:text-foreground transition-colors">
-            Dashboard
-          </Link>
-        )}
+        <Link href="/dashboard" className="hover:text-foreground transition-colors">
+          Dashboard
+        </Link>
         <ChevronRight className="h-3.5 w-3.5" />
         {isLoading ? (
           <Skeleton className="h-4 w-32" />
@@ -470,7 +462,7 @@ export default function OrganizationDetailPage({
             </div>
           </div>
 
-          {/* Colaboradores — visível apenas para PLATFORM_ADMIN e OWNER */}
+          {/* Colaboradores — visível apenas para OWNER */}
           {canSeeCollaborators && (
             <div className="rounded-xl border bg-card shadow-sm">
               <div className="px-5 py-4 flex items-center justify-between gap-4">

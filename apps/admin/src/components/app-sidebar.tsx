@@ -18,7 +18,6 @@ import {
   LayoutDashboardIcon,
   BuildingIcon,
   MapPinIcon,
-  UsersIcon,
   Settings2Icon,
 } from "lucide-react"
 
@@ -30,7 +29,7 @@ const teams = [
   },
 ]
 
-const baseNavItems = [
+const navItems = [
   {
     title: "Dashboard",
     url: "/dashboard",
@@ -52,25 +51,8 @@ const baseNavItems = [
   },
 ]
 
-const platformAdminNavItems = [
-  {
-    title: "Organizações",
-    url: "/organizations",
-    icon: <BuildingIcon />,
-    items: [{ title: "Listar", url: "/organizations" }],
-  },
-  {
-    title: "Usuários",
-    url: "/users",
-    icon: <UsersIcon />,
-    items: [{ title: "Listar", url: "/users" }],
-  },
-]
-
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, organization } = useAuth()
-
-  const isPlatformAdmin = user?.role === "PLATFORM_ADMIN"
 
   const collaboratorOrgItem = organization
     ? [
@@ -83,9 +65,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ]
     : []
 
-  const navItems = isPlatformAdmin
-    ? [baseNavItems[0], ...platformAdminNavItems, ...baseNavItems.slice(1)]
-    : [baseNavItems[0], ...collaboratorOrgItem, ...baseNavItems.slice(1)]
+  const allNavItems = [navItems[0], ...collaboratorOrgItem, ...navItems.slice(1)]
 
   const sidebarUser = {
     name: user?.name ?? "",
@@ -99,7 +79,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <TeamSwitcher teams={teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navItems} />
+        <NavMain items={allNavItems} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={sidebarUser} />

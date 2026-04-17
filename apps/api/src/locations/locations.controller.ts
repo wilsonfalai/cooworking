@@ -21,7 +21,7 @@ import { UpdateLocationDto } from './dto/update-location.dto.js';
 @ApiBearerAuth()
 @Controller('organizations/:orgId/locations')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
-@Roles('PLATFORM_ADMIN', 'COLLABORATOR')
+@Roles('COLLABORATOR')
 export class LocationsController {
   constructor(private readonly locationsService: LocationsService) {}
 
@@ -33,7 +33,7 @@ export class LocationsController {
   @Get()
   findAll(
     @Param('orgId') orgId: string,
-    @CurrentUser() user: { id: string; role: string; isCollaborator: boolean },
+    @CurrentUser() user: { id: string },
   ) {
     return this.locationsService.findAllByOrg(orgId, user);
   }

@@ -12,11 +12,10 @@ jest.mock('bcrypt', () => ({
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
-const platformAdminUser = {
-  id: 'user-admin-1',
+const collaboratorUser = {
+  id: 'user-collab-1',
   email: 'admin@cooworking.com',
-  name: 'Admin Platform',
-  role: 'PLATFORM_ADMIN',
+  name: 'Admin Cooworking',
   accounts: [{ providerId: 'credential', password: 'hashed_password' }],
 };
 
@@ -24,7 +23,6 @@ const regularUser = {
   id: 'user-luiza-1',
   email: 'luiza@teste.com',
   name: 'Luiza Guimarães',
-  role: 'USER',
   accounts: [{ providerId: 'credential', password: 'hashed_password' }],
 };
 
@@ -85,7 +83,7 @@ describe('AuthService', () => {
     });
 
     it('deve lançar ConflictException se o email já estiver cadastrado', async () => {
-      usersService.findByEmail.mockResolvedValue(platformAdminUser as any);
+      usersService.findByEmail.mockResolvedValue(collaboratorUser as any);
 
       await expect(
         service.register({ email: 'admin@cooworking.com', name: 'Admin', password: 'senha1234' }),
@@ -98,8 +96,8 @@ describe('AuthService', () => {
   // ─── login ─────────────────────────────────────────────────────────────────
 
   describe('login', () => {
-    it('deve autenticar PLATFORM_ADMIN com credenciais válidas e retornar token', async () => {
-      usersService.findByEmail.mockResolvedValue(platformAdminUser as any);
+    it('deve autenticar colaborador com credenciais válidas e retornar token', async () => {
+      usersService.findByEmail.mockResolvedValue(collaboratorUser as any);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const result = await service.login({
@@ -110,9 +108,7 @@ describe('AuthService', () => {
       expect(result).toEqual({ accessToken: 'mock.jwt.token' });
     });
 
-    it('deve autenticar USER comum (membro de coworking) com credenciais válidas', async () => {
-      // A API não restringe login por role — ela apenas autentica.
-      // A restrição de acesso por plataforma (admin vs web) é responsabilidade do frontend.
+    it('deve autenticar usuário comum (membro de coworking) com credenciais válidas', async () => {
       usersService.findByEmail.mockResolvedValue(regularUser as any);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
@@ -133,7 +129,7 @@ describe('AuthService', () => {
     });
 
     it('deve lançar UnauthorizedException para senha incorreta', async () => {
-      usersService.findByEmail.mockResolvedValue(platformAdminUser as any);
+      usersService.findByEmail.mockResolvedValue(collaboratorUser as any);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(
@@ -143,7 +139,7 @@ describe('AuthService', () => {
 
     it('deve lançar UnauthorizedException se o usuário não tiver conta credential', async () => {
       usersService.findByEmail.mockResolvedValue({
-        ...platformAdminUser,
+        ...collaboratorUser,
         accounts: [],
       } as any);
 
@@ -153,14 +149,13 @@ describe('AuthService', () => {
     });
 
     it('deve usar a mesma mensagem de erro para email e senha inválidos (segurança)', async () => {
-      // Não deve revelar se o email existe ou não — ambos retornam "Invalid credentials"
       usersService.findByEmail.mockResolvedValue(null);
 
       const errorEmailInvalido = await service
         .login({ email: 'naoexiste@test.com', password: 'qualquer' })
         .catch((e: Error) => e.message);
 
-      usersService.findByEmail.mockResolvedValue(platformAdminUser as any);
+      usersService.findByEmail.mockResolvedValue(collaboratorUser as any);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       const errorSenhaInvalida = await service

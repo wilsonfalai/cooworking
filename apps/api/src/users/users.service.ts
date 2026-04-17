@@ -6,7 +6,6 @@ const userSelect = {
   id: true,
   email: true,
   name: true,
-  role: true,
   emailVerified: true,
   image: true,
   createdAt: true,

@@ -224,10 +224,7 @@ export function RegisterMemberSheet({
 
   // ─────────────────────────────────────────────────────────────────────────────
 
-  const isPlatformAdmin = user?.role === "PLATFORM_ADMIN"
-  const availableRoles = isPlatformAdmin
-    ? ALL_ROLES
-    : ALL_ROLES.filter((r) => r !== "OWNER")
+  const availableRoles = ALL_ROLES.filter((r) => r !== "OWNER")
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>

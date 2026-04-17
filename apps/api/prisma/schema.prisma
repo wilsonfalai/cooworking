@@ -11,12 +11,11 @@ generator client {
 // ─── Auth Tables (better-auth compatible structure) ───────────────────────────
 
 model User {
-  id            String       @id
+  id            String   @id
   name          String
-  email         String       @unique
+  email         String   @unique
   emailVerified Boolean
   image         String?
-  role          PlatformRole @default(USER)
   createdAt     DateTime
   updatedAt     DateTime
   sessions      Session[]
@@ -75,13 +74,6 @@ model Verification {
 }
 
 // ─── Domain Enums ────────────────────────────────────────────────────────────
-
-enum PlatformRole {
-  PLATFORM_ADMIN
-  USER
-
-  @@schema("cooworking2")
-}
 
 enum MemberRole {
   OWNER

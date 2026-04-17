@@ -22,7 +22,7 @@ import { UpdateMemberDto } from './dto/update-member.dto.js';
 @ApiBearerAuth()
 @Controller('organizations/:orgId/members')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
-@Roles('PLATFORM_ADMIN', 'COLLABORATOR')
+@Roles('COLLABORATOR')
 export class MembersController {
   constructor(private readonly membersService: MembersService) {}
 
@@ -39,12 +39,6 @@ export class MembersController {
   ) {
     if (locationId) {
       return this.membersService.findAllByLocation(orgId, locationId);
-    }
-    // PLATFORM_ADMIN sees all members in the org.
-    // Everyone else (OWNER/ADMIN/STAFF) only sees members from locations
-    // where they hold OWNER or ADMIN role — not STAFF-only locations.
-    if (req.user?.role === 'PLATFORM_ADMIN') {
-      return this.membersService.findAllByOrg(orgId);
     }
     const adminLocationIds: string[] = (req.user?.memberships ?? [])
       .filter((m: { role: string }) => m.role === 'OWNER' || m.role === 'ADMIN')

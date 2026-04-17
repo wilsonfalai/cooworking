@@ -54,7 +54,7 @@ packages/
 ## Domain Model
 
 ```
-User (auth) → role: PLATFORM_ADMIN | USER
+User (auth)
 Organization (tenant) → status: TRIAL | ACTIVE | SUSPENDED
   └── Location (filial) → status: ACTIVE | INACTIVE
         └── Member (vínculo) → role: OWNER | ADMIN | STAFF | MEMBER
@@ -64,6 +64,7 @@ Organization (tenant) → status: TRIAL | ACTIVE | SUSPENDED
 - Member: 1 registro por user por location (@@unique([userId, locationId]))
 - OWNER/ADMIN auto-criados em novas locations
 - Slug: Organization (global unique), Location (unique dentro da org)
+- Controle de acesso via membership: COLLABORATOR = user com Member OWNER/ADMIN/STAFF ativo
 
 ## Convenções
 

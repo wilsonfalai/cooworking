@@ -41,9 +41,9 @@ export class MembersService {
   /**
    * Returns all members of an organization.
    *
-   * When `adminLocationIds` is provided (for non-PLATFORM_ADMIN callers), the result
-   * is scoped to the locations where the requester is OWNER or ADMIN. This ensures
-   * that a user who is ADMIN at Location B cannot see members from Location A.
+   * When `adminLocationIds` is provided, the result is scoped to the locations
+   * where the requester is OWNER or ADMIN. This ensures that a user who is ADMIN
+   * at Location B cannot see members from Location A.
    */
   async findAllByOrg(organizationId: string, adminLocationIds?: string[]) {
     const where = {

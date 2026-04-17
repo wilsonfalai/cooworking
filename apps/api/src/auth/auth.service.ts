@@ -28,7 +28,7 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    return this.generateTokens(user.id, user.email, user.role);
+    return this.generateTokens(user.id, user.email);
   }
 
   async login(dto: LoginDto) {
@@ -50,11 +50,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    return this.generateTokens(user.id, user.email, user.role);
+    return this.generateTokens(user.id, user.email);
   }
 
-  private generateTokens(userId: string, email: string, role: string) {
-    const payload = { sub: userId, email, role };
+  private generateTokens(userId: string, email: string) {
+    const payload = { sub: userId, email };
     return {
       accessToken: this.jwtService.sign(payload),
     };
